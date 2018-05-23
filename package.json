@@ -20,7 +20,8 @@
   "homepage": "https://github.com/andela-mmichael/batch-edit-service#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
-    "express": "^4.16.3"
+    "express": "^4.16.3",
+    "unirest": "^0.5.1"
   },
   "devDependencies": {
     "nodemon": "^1.17.5"
