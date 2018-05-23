@@ -70,7 +70,7 @@ app.get('/', function (req, res) {
 
 app.post('/batch/:id?', function (req, res) {
   let result = [];
-  let data = req.body.payload || req.params.id;
+  let data = req.body.payload || req.params.id.split(',');
 
   data.forEach(async(element) => {
     const requestOptions = {
