@@ -26,7 +26,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 
 app.get('/', function (req, res) {
-  res.send(200, "You're running the Batch Edit Service");
+  res.send("You're running the Batch Edit Service");
 });
 
 
@@ -68,33 +68,60 @@ app.get('/', function (req, res) {
  * @param res - HTTP response object
  */
 
-app.post('/batch/:id?', function (req, res) {
-  let result = [];
+app.post('/batch/:id?', async function (req, res) {
   let data = req.body.payload || req.params.id.split(',');
 
-  data.forEach(async(element) => {
+  const requestPromise = () => data.map((item) => {
     const requestOptions = {
-      url: `${req.body.url}/${element.id}`,
-      type: req.body.verb
+      url: `${req.body.url}/${item}`,
+      method: req.body.verb,
+      body: req.body.data,
+      id: item
     };
-    let message = await updateUser(requestOptions, element);
-    result.push({ id: element.id, status: message });
+    return updateUser(requestOptions);
   });
 
-  res.json({ result });
+  let results = await batchProcess(requestPromise);
 
+  res.json(results);
 });
 
-
-function updateUser(options, payload) {
+function updateUser(options) {
   return new Promise((resolve, reject) =>  {
-    unirest.put(options.url)
+    unirest(options.method, options.url)
       .headers({ 'Accept': 'application/json', 'Content-Type': 'application/json' })
-      .send(payload.body)
+      .send(options.body)
       .end(function (response) {
-        resolve(response.body);
+        if (response.statusCode === 200) {
+          resolve({
+            id: options.id,
+            success: true
+          });
+        }
+
+        // retry call
+        if (response.statusCode === 503) {
+          // updateUser(options, payload)
+          resolve({
+            id: options.id,
+            success: false
+          });
+        }
+
+        // wait and  retry
+        // if (response.statusCode === 429) {
+
+        // }
+
       })
   });
+}
+
+async function batchProcess(requestPromise) {
+  return Promise.all(requestPromise())
+    .then((body) => body)
+    .catch((err) => console.error(err));
+
 }
 
 
